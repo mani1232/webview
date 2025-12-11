@@ -12,30 +12,38 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    # --- LINUX ---
+    # --- LINUX DEPENDENCIES ---
     - name: Install Dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev
+        sudo apt-get install libgtk-3-dev libwebkit2gtk-4.0-dev
 
-    # --- MACOS (ИСПРАВЛЕНО ТУТ) ---
+    # --- MACOS DEPENDENCIES ---
     - name: Install Dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
         brew install llvm
-        # Добавляем llvm в PATH, иначе CMake его не увидит
         echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
-    # --- WINDOWS / CMAKE CONFIG ---
+    # --- WINDOWS DEPENDENCIES (ИСПРАВЛЕНО) ---
+    - name: Install Dependencies (Windows)
+      if: runner.os == 'Windows'
+      # Устанавливаем doxygen и graphviz, чтобы CMake не падал с ошибкой "missing dot"
+      run: choco install doxygen.install graphviz
+
+    # --- CMAKE CONFIG ---
     - name: Configure CMake
       run: |
+        # Добавляем флаг -DWEBVIEW_BUILD_DOCS=OFF чтобы ускорить сборку и избежать ошибок документации
+        COMMON_FLAGS="-DBUILD_SHARED_LIBS=OFF -DWEBVIEW_BUILD_DOCS=OFF"
+
         if [ "$RUNNER_OS" == "macOS" ]; then
-          cmake -S . -B build -DCMAKE_OSX_ARCHITECTURES=x86_64 -DBUILD_SHARED_LIBS=OFF
+          cmake -S . -B build -DCMAKE_OSX_ARCHITECTURES=x86_64 $COMMON_FLAGS
         elif [ "$RUNNER_OS" == "Windows" ]; then
-          cmake -S . -B build -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF
+          cmake -S . -B build -G "MinGW Makefiles" $COMMON_FLAGS
         else
-          cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
+          cmake -S . -B build $COMMON_FLAGS
         fi
       shell: bash
 
