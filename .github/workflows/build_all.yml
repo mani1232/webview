@@ -46,4 +46,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: libwebview-${{ matrix.os }}-x64
-        path
+        path: |
+          build/**/*.a
+          build/**/*.lib
