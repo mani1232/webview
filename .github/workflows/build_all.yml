@@ -26,16 +26,14 @@ jobs:
         brew install llvm
         echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
-    # --- WINDOWS DEPENDENCIES (ИСПРАВЛЕНО) ---
+    # --- WINDOWS DEPENDENCIES ---
     - name: Install Dependencies (Windows)
       if: runner.os == 'Windows'
-      # Устанавливаем doxygen и graphviz, чтобы CMake не падал с ошибкой "missing dot"
       run: choco install doxygen.install graphviz
 
     # --- CMAKE CONFIG ---
     - name: Configure CMake
       run: |
-        # Добавляем флаг -DWEBVIEW_BUILD_DOCS=OFF чтобы ускорить сборку и избежать ошибок документации
         COMMON_FLAGS="-DBUILD_SHARED_LIBS=OFF -DWEBVIEW_BUILD_DOCS=OFF"
 
         if [ "$RUNNER_OS" == "macOS" ]; then
@@ -47,8 +45,12 @@ jobs:
         fi
       shell: bash
 
+    # --- FIX AND BUILD (ИСПРАВЛЕНО ЗДЕСЬ) ---
     - name: Build
-      run: cmake --build build
+      # Создаем папку вручную, так как скрипт сборки забывает это сделать и падает
+      run: |
+        cmake -E make_directory build/core/amalgamation
+        cmake --build build
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
