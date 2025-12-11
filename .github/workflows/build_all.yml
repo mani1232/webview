@@ -12,28 +12,29 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    # Исправление для Linux: Нужны -dev пакеты для компиляции, а не просто библиотеки
+    # --- LINUX ---
     - name: Install Dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev
 
-    # Исправление для macOS: Устанавливаем clang-format, чтобы избежать ошибки CMake
+    # --- MACOS (ИСПРАВЛЕНО ТУТ) ---
     - name: Install Dependencies (macOS)
       if: runner.os == 'macOS'
-      run: brew install clang-format
+      run: |
+        brew install llvm
+        # Добавляем llvm в PATH, иначе CMake его не увидит
+        echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
+    # --- WINDOWS / CMAKE CONFIG ---
     - name: Configure CMake
       run: |
         if [ "$RUNNER_OS" == "macOS" ]; then
-          # Принудительно x86_64 для Mac
           cmake -S . -B build -DCMAKE_OSX_ARCHITECTURES=x86_64 -DBUILD_SHARED_LIBS=OFF
         elif [ "$RUNNER_OS" == "Windows" ]; then
-          # Пытаемся использовать MinGW для получения .a файла
           cmake -S . -B build -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF
         else
-          # Linux
           cmake -S . -B build -DBUILD_SHARED_LIBS=OFF
         fi
       shell: bash
@@ -45,7 +46,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: libwebview-${{ matrix.os }}-x64
-        # Ищем рекурсивно (**), так как файл может лежать в build/core/
-        path: |
-          build/**/*.a
-          build/**/*.lib
+        path
